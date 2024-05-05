@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v4
+
+      - name: Setup Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v2
+
+      - name: Cache PureScript dependencies
+        uses: actions/cache@v2
+        with:
+          key: ${{ runner.os }}-spago-${{ hashFiles('**/spago.yaml') }}
+          path: |
+            .spago
+            output
+
+      - name: Load Nix environment
+        run: nix develop
+
+      - name: Install NPM dependencies
+        run: nix develop --command npm ci
+
+      - name: Build source
+        run: nix develop --command npm run build
+
+      - name: Run tests
+        run: nix develop --command npm run test
+
+      - name: Check formatting
+        run: nix develop --command purs-tidy check src test
+
+      - name: Run bundle
+        run: nix develop --command npm run bundle
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'

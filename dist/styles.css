@@ -1,0 +1,30 @@
+.app {
+  background-color: blue;
+}
+
+div.container {
+    width: 900px;
+    height: 600px;
+}
+div.row {
+    width: 900px;
+    height: 100px;
+    outline: 1px solid;
+    float: left;
+}
+
+div.cell {
+    width: 100px;
+    height: 100px;
+    outline: 1px solid;
+    float: left;
+    display: inline-block;
+ }
+div.figcell {
+    width: 100px;
+    height: 100px;
+    outline: 1px solid;
+    float: left;
+    display: inline-block;
+    background-color: blue;
+ }

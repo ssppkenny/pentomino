@@ -1,0 +1,56 @@
+package:
+  name: halogen-realworld
+  dependencies:
+    - aff
+    - affjax
+    - affjax-web
+    - argonaut-core
+    - arrays
+    - bifunctors
+    - codec
+    - codec-argonaut
+    - console
+    - const
+    - css
+    - datetime
+    - dom-indexed
+    - effect
+    - either
+    - enums
+    - foldable-traversable
+    - formatters
+    - halogen
+    - halogen-formless
+    - halogen-store
+    - halogen-css
+    - http-methods
+    - lists
+    - maybe
+    - newtype
+    - now
+    - ordered-collections
+    - parallel
+    - precise-datetime
+    - prelude
+    - profunctor
+    - profunctor-lenses
+    - remotedata
+    - routing
+    - routing-duplex
+    - safe-coerce
+    - strings
+    - transformers
+    - tuples
+    - typelevel-prelude
+    - web-events
+    - web-html
+    - web-storage
+    - web-uievents
+  test:
+    main: Test.Main
+    dependencies: []
+workspace:
+  buildOpts:
+    censorLibraryWarnings: all
+  packageSet:
+    registry: 48.4.0
