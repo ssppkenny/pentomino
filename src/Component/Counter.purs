@@ -1,7 +1,10 @@
 module Component.Counter where
 
 import Data.Array
+import Data.Function.Uncurried
+import Effect
 import Prelude
+import Web.UIEvent.KeyboardEvent
 
 import CSS.Common (hidden)
 import CSS.Display (display, flex)
@@ -15,12 +18,13 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (log)
 import Halogen as H
+import Halogen.Query as HQ
 import Halogen.HTML as HH
 import Halogen.HTML.CSS as HC
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Data.Function.Uncurried
-import Effect
+import Web.HTML.HTMLElement (focus)
+import Data.Foldable (for_)
 
 
 class SpaceEvenly a where 
@@ -54,9 +58,9 @@ type Slots = ()
 
 type Query :: ∀ k. k -> Type 
 type Query = Const Void
-data Action = Initialize | Finalize | Increment | Decrement
+data Action = Initialize | Finalize | MoveRight | MoveLeft | MoveUp | MoveDown | NoMove
 
-cells fig j = mapWithIndex (\i _ -> HH.div [HP.classes [HH.ClassName if (present (real_coords fig.board i j) [b,a]) then "figcell" else "cell"]] []) (range 0 8)
+cells fig j = mapWithIndex (\i _ -> HH.div [HP.classes [HH.ClassName if (present (real_coords fig.board a b) [i,j]) then "figcell" else "cell"]] []) (range 0 9)
   where 
     a = fromMaybe 0 (fig.coords !! 0)
     b = fromMaybe 0 (fig.coords !! 1)
@@ -64,12 +68,33 @@ cells fig j = mapWithIndex (\i _ -> HH.div [HP.classes [HH.ClassName if (present
 
 rows fig = mapWithIndex (\j _ -> HH.div [HP.classes [HH.ClassName "row"]] (cells fig j)) (range 0 5)
 
+right :: Figure -> Figure 
+right f = f { coords = new_coords }
+  where
+    x = fromMaybe 0 (f.coords !! 0)
+    y = fromMaybe 0 (f.coords !! 1)
+    new_coords = if (x + 1) <= 9 then [x + 1, y] else [x, y]
+
+left :: Figure -> Figure 
+left f = f { coords = new_coords }
+  where
+    x = fromMaybe 0 (f.coords !! 0)
+    y = fromMaybe 0 (f.coords !! 1)
+    new_coords = if (x - 1) >= 0 then [x - 1, y] else [x, y]
+
+up :: Figure -> Figure 
+up f = f { coords = new_coords }
+  where
+    x = fromMaybe 0 (f.coords !! 0)
+    y = fromMaybe 0 (f.coords !! 1)
+    new_coords = if (y - 1) >= 0 then [x, y - 1] else [x, y]
+
 down :: Figure -> Figure 
 down f = f { coords = new_coords }
   where
     x = fromMaybe 0 (f.coords !! 0)
     y = fromMaybe 0 (f.coords !! 1)
-    new_coords = if (x + 1) <= 8 then [x + 1, y] else [x, y]
+    new_coords = if (y + 1) <= 5 then [x, y + 1] else [x, y]
 
 real_coords :: Board -> Int -> Int -> Board
 real_coords board x y = map (\t -> [fromMaybe 0 (t!!0) + x, fromMaybe 0 (t!!1) + y]) board
@@ -77,6 +102,13 @@ real_coords board x y = map (\t -> [fromMaybe 0 (t!!0) + x, fromMaybe 0 (t!!1) +
 present :: Board -> Array Int -> Boolean
 present board x = not $ null $ filter (\t -> t == x) board
 
+
+keyboardHandler e = case (code e) of 
+  "ArrowLeft" -> MoveLeft
+  "ArrowRight" -> MoveRight
+  "ArrowUp" -> MoveUp
+  "ArrowDown" -> MoveDown
+  _ -> NoMove
 
 component
   :: ∀ m
@@ -94,11 +126,17 @@ component = H.mkComponent
     where
     render :: State -> H.ComponentHTML Action Slots m 
     render fig = 
-      HH.div [ HP.classes [HH.ClassName "container"], HP.tabIndex 0,  HE.onKeyDown (\_ -> Increment) ]
+      HH.div [ HP.classes [HH.ClassName "container"], HP.tabIndex 0, HP.ref (H.RefLabel "container"),  HE.onKeyDown keyboardHandler ]
       (rows fig)
     handleAction = case _ of
-                       Initialize -> log "Initialize"
+                       Initialize -> do
+                            mElement <- HQ.getHTMLElementRef $ H.RefLabel "container"
+                            for_ mElement \element -> do
+                                H.liftEffect $ focus element
                        Finalize -> log "Finalize"
-                       Increment -> H.modify_ \s -> down s
-                       Decrement -> H.modify_ \s -> s
+                       MoveRight -> H.modify_ \s -> right s
+                       MoveLeft -> H.modify_ \s -> left s
+                       MoveUp -> H.modify_ \s -> up s
+                       MoveDown -> H.modify_ \s -> down s
+                       NoMove -> H.modify_ \s -> s
 
