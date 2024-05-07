@@ -19,12 +19,22 @@ div.cell {
     outline: 1px solid;
     float: left;
     display: inline-block;
- }
-div.figcell {
+}
+
+div.figcell1 {
     width: 100px;
     height: 100px;
     outline: 1px solid;
     float: left;
     display: inline-block;
     background-color: #90EE90;
+}
+
+div.figcell2 {
+    width: 100px;
+    height: 100px;
+    outline: 1px solid;
+    float: left;
+    display: inline-block;
+    background-color: #C4A484;
  }

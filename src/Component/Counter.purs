@@ -25,6 +25,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Web.HTML.HTMLElement (focus)
 import Data.Foldable (for_)
+import Data.Int (toStringAs, radix)
 
 
 class SpaceEvenly a where 
@@ -44,57 +45,82 @@ instance spaceEvenlyJustifyContentValue
 
 type Board = Array (Array Int)
 
-type Figure = { base :: Array (Array Int), board :: Board, coords :: Array Int }
+type Figure = { base :: Array (Array Int), board :: Board, coords :: Array Int, number :: Int }
 
 fig :: Figure
-fig = { base : [[0,0], [2,0], [2,2], [0,2]], board : [[0,0], [1, 0], [0, 1], [1, 1], [0, 2]], coords : [2,1] }
+fig = { base : [[0,0], [2,0], [2,2], [0,2]], board : [[0,0], [1, 0], [0, 1], [1, 1], [0, 2]], coords : [2,1], number : 1 }
+
+fig1 :: Figure 
+fig1 = { base :  [[0,2], [2,0], [4,2], [2,4]], board : [[0,2], [1,2], [2,2], [3,2], [4,2]], coords : [3,2], number : 2 }
+
 
 type Input = Int
 type Output = Figure
 -- type State = { count :: Int }
-type State = Figure
+type State = { active_figure :: Figure, figures :: Array Figure }
 type Slots :: forall k. Row k 
 type Slots = ()
 
 type Query :: ∀ k. k -> Type 
 type Query = Const Void
-data Action = Initialize | Finalize | MoveRight | MoveLeft | MoveUp | MoveDown | NoMove
+data Action = Initialize | Finalize | MoveRight | MoveLeft | MoveUp | MoveDown | NoMove | Activate Int
 
-cells fig j = mapWithIndex (\i _ -> HH.div [HP.classes [HH.ClassName if (present (real_coords fig.board a b) [i,j]) then "figcell" else "cell"]] []) (range 0 9)
+cells fig j = mapWithIndex (\i _ -> HH.div [HP.classes [HH.ClassName if (present (real_coords fig.board a b) [i,j]) then cls else "cell"]] []) (range 0 9)
   where 
     a = fromMaybe 0 (fig.coords !! 0)
     b = fromMaybe 0 (fig.coords !! 1)
+    cls = "figcell" <> (fromMaybe "" $ map (\x -> toStringAs x fig.number) (radix 10))
      
 
 rows fig = mapWithIndex (\j _ -> HH.div [HP.classes [HH.ClassName "row"]] (cells fig j)) (range 0 5)
 
-right :: Figure -> Figure 
-right f = f { coords = new_coords }
+
+move :: Figure -> Array Figure -> Array Int -> State
+move f figs new_coords = { active_figure : nf, figures : new_figs }
+  where
+    nf = f { coords = new_coords }
+    t = fromMaybe [] (tail figs)
+    new_figs = cons nf t
+
+  
+
+
+right :: State -> State 
+right {active_figure : f, figures : figs} = move f figs new_coords 
   where
     x = fromMaybe 0 (f.coords !! 0)
     y = fromMaybe 0 (f.coords !! 1)
     new_coords = if (x + 1) <= 9 then [x + 1, y] else [x, y]
 
-left :: Figure -> Figure 
-left f = f { coords = new_coords }
+left :: State -> State 
+left {active_figure : f, figures : figs} =  move f figs new_coords
   where
     x = fromMaybe 0 (f.coords !! 0)
     y = fromMaybe 0 (f.coords !! 1)
     new_coords = if (x - 1) >= 0 then [x - 1, y] else [x, y]
 
-up :: Figure -> Figure 
-up f = f { coords = new_coords }
+up :: State -> State 
+up {active_figure : f, figures : figs} = move f figs new_coords
   where
     x = fromMaybe 0 (f.coords !! 0)
     y = fromMaybe 0 (f.coords !! 1)
     new_coords = if (y - 1) >= 0 then [x, y - 1] else [x, y]
 
-down :: Figure -> Figure 
-down f = f { coords = new_coords }
+down :: State -> State 
+down {active_figure : f, figures : figs} = move f figs new_coords
   where
     x = fromMaybe 0 (f.coords !! 0)
     y = fromMaybe 0 (f.coords !! 1)
     new_coords = if (y + 1) <= 5 then [x, y + 1] else [x, y]
+
+activate :: State -> Int -> State
+activate {active_figure : f, figures : figs } n = { active_figure : nf, figures : new_figs }
+  where 
+    nf = fromMaybe f ((filter (\t -> t.number == n) figs) !! 0)
+    ind = fromMaybe 0 (elemIndex nf figs)
+    a1 = fromMaybe f (figs !! 0)
+    a2 = fromMaybe f (figs !! ind)
+    new_figs = if nf == f then figs else fromMaybe [] (modifyAt ind  (\_ -> a1) (fromMaybe [] (modifyAt 0 (\_ -> a2) figs)))
 
 real_coords :: Board -> Int -> Int -> Board
 real_coords board x y = map (\t -> [fromMaybe 0 (t!!0) + x, fromMaybe 0 (t!!1) + y]) board
@@ -108,6 +134,8 @@ keyboardHandler e = case (code e) of
   "ArrowRight" -> MoveRight
   "ArrowUp" -> MoveUp
   "ArrowDown" -> MoveDown
+  "Digit1" -> Activate 1
+  "Digit2" -> Activate 2
   _ -> NoMove
 
 component
@@ -115,7 +143,7 @@ component
   . MonadAff m
   => H.Component Query Input Output m
 component = H.mkComponent
-    { initialState: \i -> fig
+    { initialState: \i -> { active_figure : fig, figures : [fig, fig1] }
     , render
     , eval: H.mkEval H.defaultEval {
       initialize = Just Initialize 
@@ -125,7 +153,7 @@ component = H.mkComponent
     }
     where
     render :: State -> H.ComponentHTML Action Slots m 
-    render fig = 
+    render { active_figure : fig, figures : figures } = 
       HH.div [ HP.classes [HH.ClassName "container"], HP.tabIndex 0, HP.ref (H.RefLabel "container"),  HE.onKeyDown keyboardHandler ]
       (rows fig)
     handleAction = case _ of
@@ -139,4 +167,5 @@ component = H.mkComponent
                        MoveUp -> H.modify_ \s -> up s
                        MoveDown -> H.modify_ \s -> down s
                        NoMove -> H.modify_ \s -> s
+                       Activate n -> H.modify_ \s -> activate s n
 
