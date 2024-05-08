@@ -51,8 +51,14 @@ fig :: Figure
 fig = { base : [[0,0], [2,0], [2,2], [0,2]], board : [[0,0], [1, 0], [0, 1], [1, 1], [0, 2]], coords : [2,1], number : 1 }
 
 fig1 :: Figure 
-fig1 = { base :  [[0,2], [2,0], [4,2], [2,4]], board : [[0,2], [1,2], [2,2], [3,2], [4,2]], coords : [3,2], number : 2 }
+fig1 = { base :  [[0,2], [2,0], [4,2], [2,4]], board : [[0,0], [1,0], [2,0], [3,0], [4,0]], coords : [3,2], number : 2 }
 
+
+fig2 :: Figure 
+fig2 = { base :  [[0,0], [2,0], [2,2], [0,2]], board : [[0,0], [1,0], [2,0], [1,1], [1,2]], coords : [5,2], number : 3 }
+
+fig3 :: Figure 
+fig3 = { base :  [[0,0], [2,0], [2,2], [0,2]], board : [[0,0], [1,0], [1,1], [1,2], [2,2]], coords : [7,3], number : 4 }
 
 type Input = Int
 type Output = Figure
@@ -65,14 +71,24 @@ type Query :: ∀ k. k -> Type
 type Query = Const Void
 data Action = Initialize | Finalize | MoveRight | MoveLeft | MoveUp | MoveDown | NoMove | Activate Int
 
-cells fig j = mapWithIndex (\i _ -> HH.div [HP.classes [HH.ClassName if (present (real_coords fig.board a b) [i,j]) then cls else "cell"]] []) (range 0 9)
+cellInFig :: Figure -> Int -> Int -> Boolean
+cellInFig fig' i j = present (realCoords fig'.board a b) [i, j]
   where 
-    a = fromMaybe 0 (fig.coords !! 0)
-    b = fromMaybe 0 (fig.coords !! 1)
+    a = fromMaybe 0 (fig'.coords !! 0)
+    b = fromMaybe 0 (fig'.coords !! 1)
+
+cellClass figs i j = if (length figs_present > 0) then "cellfig" <> (fromMaybe "" (strings !! 0)) else "cell" 
+  where 
+    figs_present = filter (\x -> cellInFig x i j) figs
+    strings = map (\f' -> (fromMaybe "" $ map (\x -> toStringAs x f'.number) (radix 10))) figs_present
+    
+
+cells fig figs j = mapWithIndex (\i _ -> HH.div [HP.classes [HH.ClassName (cellClass figs i j)]] []) (range 0 9)
+  where 
     cls = "figcell" <> (fromMaybe "" $ map (\x -> toStringAs x fig.number) (radix 10))
      
 
-rows fig = mapWithIndex (\j _ -> HH.div [HP.classes [HH.ClassName "row"]] (cells fig j)) (range 0 5)
+rows fig figs = mapWithIndex (\j _ -> HH.div [HP.classes [HH.ClassName "row"]] (cells fig figs j)) (range 0 5)
 
 
 move :: Figure -> Array Figure -> Array Int -> State
@@ -122,8 +138,8 @@ activate {active_figure : f, figures : figs } n = { active_figure : nf, figures 
     a2 = fromMaybe f (figs !! ind)
     new_figs = if nf == f then figs else fromMaybe [] (modifyAt ind  (\_ -> a1) (fromMaybe [] (modifyAt 0 (\_ -> a2) figs)))
 
-real_coords :: Board -> Int -> Int -> Board
-real_coords board x y = map (\t -> [fromMaybe 0 (t!!0) + x, fromMaybe 0 (t!!1) + y]) board
+realCoords :: Board -> Int -> Int -> Board
+realCoords board x y = map (\t -> [fromMaybe 0 (t!!0) + x, fromMaybe 0 (t!!1) + y]) board
 
 present :: Board -> Array Int -> Boolean
 present board x = not $ null $ filter (\t -> t == x) board
@@ -136,6 +152,8 @@ keyboardHandler e = case (code e) of
   "ArrowDown" -> MoveDown
   "Digit1" -> Activate 1
   "Digit2" -> Activate 2
+  "Digit3" -> Activate 3
+  "Digit4" -> Activate 4
   _ -> NoMove
 
 component
@@ -143,7 +161,7 @@ component
   . MonadAff m
   => H.Component Query Input Output m
 component = H.mkComponent
-    { initialState: \i -> { active_figure : fig, figures : [fig, fig1] }
+    { initialState: \i -> { active_figure : fig, figures : [fig, fig1, fig2, fig3] }
     , render
     , eval: H.mkEval H.defaultEval {
       initialize = Just Initialize 
@@ -155,7 +173,7 @@ component = H.mkComponent
     render :: State -> H.ComponentHTML Action Slots m 
     render { active_figure : fig, figures : figures } = 
       HH.div [ HP.classes [HH.ClassName "container"], HP.tabIndex 0, HP.ref (H.RefLabel "container"),  HE.onKeyDown keyboardHandler ]
-      (rows fig)
+      (rows fig figures)
     handleAction = case _ of
                        Initialize -> do
                             mElement <- HQ.getHTMLElementRef $ H.RefLabel "container"

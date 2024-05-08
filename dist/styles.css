@@ -21,7 +21,7 @@ div.cell {
     display: inline-block;
 }
 
-div.figcell1 {
+div.cellfig1 {
     width: 100px;
     height: 100px;
     outline: 1px solid;
@@ -30,11 +30,29 @@ div.figcell1 {
     background-color: #90EE90;
 }
 
-div.figcell2 {
+div.cellfig2 {
     width: 100px;
     height: 100px;
     outline: 1px solid;
     float: left;
     display: inline-block;
     background-color: #C4A484;
+ }
+
+div.cellfig3 {
+    width: 100px;
+    height: 100px;
+    outline: 1px solid;
+    float: left;
+    display: inline-block;
+    background-color: #7FFFD4;
+}
+
+div.cellfig4 {
+    width: 100px;
+    height: 100px;
+    outline: 1px solid;
+    float: left;
+    display: inline-block;
+    background-color: #6a5acd;
  }
