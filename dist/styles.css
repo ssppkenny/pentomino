@@ -13,6 +13,11 @@ div.row {
     float: left;
 }
 
+div.imagerow {
+    width: 1000px;
+    outline: 1px solid;
+    float: left;
+}
 div.cell {
     width: 100px;
     height: 100px;
@@ -27,7 +32,7 @@ div.cellfig1 {
     outline: 1px solid;
     float: left;
     display: inline-block;
-    background-color: #90EE90;
+    background-color: #ED0234;
 }
 
 div.cellfig2 {
@@ -36,7 +41,7 @@ div.cellfig2 {
     outline: 1px solid;
     float: left;
     display: inline-block;
-    background-color: #C4A484;
+    background-color: #CC0000;
  }
 
 div.cellfig3 {
@@ -45,7 +50,7 @@ div.cellfig3 {
     outline: 1px solid;
     float: left;
     display: inline-block;
-    background-color: #7FFFD4;
+    background-color: #FAFF04;
 }
 
 div.cellfig4 {
@@ -54,5 +59,70 @@ div.cellfig4 {
     outline: 1px solid;
     float: left;
     display: inline-block;
-    background-color: #6a5acd;
+    background-color: #5DFF01;
+ }
+div.cellfig5 {
+    width: 100px;
+    height: 100px;
+    outline: 1px solid;
+    float: left;
+    display: inline-block;
+    background-color: #3B00FF;
+ }
+div.cellfig6 {
+    width: 100px;
+    height: 100px;
+    outline: 1px solid;
+    float: left;
+    display: inline-block;
+    background-color: #CC6501;
+ }
+div.cellfig7 {
+    width: 100px;
+    height: 100px;
+    outline: 1px solid;
+    float: left;
+    display: inline-block;
+    background-color: #336600;
+ }
+
+div.cellfig8 {
+    width: 100px;
+    height: 100px;
+    outline: 1px solid;
+    float: left;
+    display: inline-block;
+    background-color: #EF3399;
+ }
+div.cellfig9 {
+    width: 100px;
+    height: 100px;
+    outline: 1px solid;
+    float: left;
+    display: inline-block;
+    background-color: #F266CD;
+ }
+div.cellfig10 {
+    width: 100px;
+    height: 100px;
+    outline: 1px solid;
+    float: left;
+    display: inline-block;
+    background-color: #330099;
+ }
+div.cellfig11 {
+    width: 100px;
+    height: 100px;
+    outline: 1px solid;
+    float: left;
+    display: inline-block;
+    background-color: #5DCCFF;
+ }
+div.cellfig12 {
+    width: 100px;
+    height: 100px;
+    outline: 1px solid;
+    float: left;
+    display: inline-block;
+    background-color: #CBFF00;
  }

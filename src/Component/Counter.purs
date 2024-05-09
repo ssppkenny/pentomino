@@ -60,6 +60,30 @@ fig2 = { base :  [[0,0], [2,0], [2,2], [0,2]], board : [[0,0], [1,0], [2,0], [1,
 fig3 :: Figure 
 fig3 = { base :  [[0,0], [2,0], [2,2], [0,2]], board : [[0,0], [1,0], [1,1], [1,2], [2,2]], coords : [7,3], number : 4 }
 
+fig4 :: Figure 
+fig4 = { base :  [[1,0], [2,1], [1,2], [0,1]], board : [[1,0], [1,1], [1,2], [0,1], [2,1]], coords : [2,3], number : 5 }
+
+fig5 :: Figure 
+fig5 = { base :  [[1,0], [2,1], [1,2], [0,1]], board : [[1,0], [2,0], [0,1], [1,1], [1,2]], coords : [6,4], number : 6 }
+
+fig6 :: Figure 
+fig6 = { base :  [[0,0], [2,0], [2,2], [0,2]], board : [[0,1], [1,1], [2,1], [3,1], [3,0]], coords : [0,5], number : 7 }
+
+fig7 :: Figure 
+fig7 = { base :  [[0,0], [2,0], [2,2], [0,2]], board : [[0,0], [0,1], [1,1], [1,2], [2,2]], coords : [5,2], number : 8 }
+
+fig8 :: Figure 
+fig8 = { base :  [[0,0], [2,0], [2,2], [0,2]], board : [[0,0], [0,1], [1,1], [2,1], [2,0]], coords : [1,3], number : 9 }
+
+fig9 :: Figure 
+fig9 = { base :  [[1,0], [2,1], [1,2], [0,1]], board : [[0,1], [1,0], [1,1], [1,2], [1,3]], coords : [7,1], number : 10 }
+
+fig10 :: Figure 
+fig10 = { base :  [[0,0], [2,0], [2,2], [0,2]], board : [[0,0], [1,0], [1,1], [2,1], [3,1]], coords : [4,1], number : 11 }
+
+fig11 :: Figure 
+fig11 = { base :  [[0,0], [2,0], [2,2], [0,2]], board : [[0,0], [0,1], [0,2], [1,2], [2,2]], coords : [4,3], number : 12 }
+
 type Input = Int
 type Output = Figure
 -- type State = { count :: Int }
@@ -69,7 +93,32 @@ type Slots = ()
 
 type Query :: ∀ k. k -> Type 
 type Query = Const Void
-data Action = Initialize | Finalize | MoveRight | MoveLeft | MoveUp | MoveDown | NoMove | Activate Int
+data Action = Initialize | Finalize | MoveRight | MoveLeft | MoveUp | MoveDown | NoMove | Activate Int | Rotate | Flip
+
+
+max :: Int -> Int -> Int 
+max a b = if a > b then a else b
+
+size :: Board -> Int
+size b = max mx my
+  where
+    t = map (\n -> n !! 0) b 
+    r = map (\n -> n !! 1) b 
+    xs = map (\x -> fromMaybe 0 x) t 
+    ys = map (\x -> fromMaybe 0 x) r 
+    mx = maxdiff xs
+    my = maxdiff ys
+
+maximum :: Array Int -> Int 
+maximum xs = foldl (\x y -> if x > y then x else y) 0 xs
+
+minimum :: Array Int -> Int 
+minimum xs = foldl (\x y -> if x < y then x else y) 100 xs
+
+
+maxdiff :: Array Int -> Int 
+maxdiff xs = (maximum xs) - (minimum xs)
+
 
 cellInFig :: Figure -> Int -> Int -> Boolean
 cellInFig fig' i j = present (realCoords fig'.board a b) [i, j]
@@ -88,46 +137,84 @@ cells fig figs j = mapWithIndex (\i _ -> HH.div [HP.classes [HH.ClassName (cellC
     cls = "figcell" <> (fromMaybe "" $ map (\x -> toStringAs x fig.number) (radix 10))
      
 
-rows fig figs = mapWithIndex (\j _ -> HH.div [HP.classes [HH.ClassName "row"]] (cells fig figs j)) (range 0 5)
+rows fig figs = mapWithIndex (\j _ -> 
+  if j <= 5 then HH.div [HP.classes [HH.ClassName "row"]] (cells fig figs j) else HH.div [ HP.classes [HH.ClassName "imagerow"] ] [HH.img [HP.src "pents1.gif"]]
+  ) (range 0 6)
 
 
-move :: Figure -> Array Figure -> Array Int -> State
-move f figs new_coords = { active_figure : nf, figures : new_figs }
+move :: Figure -> Array Figure -> Array Int -> Board -> State
+move f figs new_coords new_board = { active_figure : nf, figures : new_figs }
   where
-    nf = f { coords = new_coords }
+    nf = f { coords = new_coords, board = new_board }
     t = fromMaybe [] (tail figs)
     new_figs = cons nf t
 
-  
+addImage arrayOfDivs = snoc arrayOfDivs (HH.div [] [(HH.img [HP.src "pents1.gif"])])   
 
 
 right :: State -> State 
-right {active_figure : f, figures : figs} = move f figs new_coords 
+right {active_figure : f, figures : figs} = move f figs new_coords f.board
   where
     x = fromMaybe 0 (f.coords !! 0)
     y = fromMaybe 0 (f.coords !! 1)
-    new_coords = if (x + 1) <= 9 then [x + 1, y] else [x, y]
+    new_coords = [x + 1, y]
 
 left :: State -> State 
-left {active_figure : f, figures : figs} =  move f figs new_coords
+left {active_figure : f, figures : figs} =  move f figs new_coords f.board
   where
     x = fromMaybe 0 (f.coords !! 0)
     y = fromMaybe 0 (f.coords !! 1)
-    new_coords = if (x - 1) >= 0 then [x - 1, y] else [x, y]
+    new_coords = [x - 1, y]
 
 up :: State -> State 
-up {active_figure : f, figures : figs} = move f figs new_coords
+up {active_figure : f, figures : figs} = move f figs new_coords f.board
   where
     x = fromMaybe 0 (f.coords !! 0)
     y = fromMaybe 0 (f.coords !! 1)
-    new_coords = if (y - 1) >= 0 then [x, y - 1] else [x, y]
+    new_coords = [x, y - 1]
 
 down :: State -> State 
-down {active_figure : f, figures : figs} = move f figs new_coords
+down {active_figure : f, figures : figs} = move f figs new_coords f.board
   where
     x = fromMaybe 0 (f.coords !! 0)
     y = fromMaybe 0 (f.coords !! 1)
-    new_coords = if (y + 1) <= 5 then [x, y + 1] else [x, y]
+    new_coords = [x, y + 1]
+
+rotate :: State -> State 
+rotate {active_figure : f, figures : figs} = move f figs new_coords new_board 
+  where
+    sz = size $ f.board
+    new_board = map (\n ->  [ sz - fromMaybe 0 (n!!1), fromMaybe 0 (n!!0) ]) f.board
+    a1 = fromMaybe [] (f.board !! 0)
+    b1 = fromMaybe [] (new_board !! 0)
+    a11 = fromMaybe 0 (a1 !! 0)
+    b11 = fromMaybe 0 (b1 !! 0)
+    a12 = fromMaybe 0 (a1 !! 1)
+    b12 = fromMaybe 0 (b1 !! 1)
+    dx = a11 - b11
+    dy = a12 - b12
+    x = fromMaybe 0 (f.coords !! 0)
+    y = fromMaybe 0 (f.coords !! 1)
+    new_coords = [x + dx, y + dy]
+
+
+fliph :: State -> State 
+fliph {active_figure : f, figures : figs} = move f figs new_coords new_board 
+  where
+    sz = size $ f.board
+    new_board = map (\n ->  [ fromMaybe 0 (n!!0), sz - fromMaybe 0 (n!!1) ]) f.board
+    a1 = fromMaybe [] (f.board !! 0)
+    b1 = fromMaybe [] (new_board !! 0)
+    a11 = fromMaybe 0 (a1 !! 0)
+    b11 = fromMaybe 0 (b1 !! 0)
+    a12 = fromMaybe 0 (a1 !! 1)
+    b12 = fromMaybe 0 (b1 !! 1)
+    dx = a11 - b11
+    dy = a12 - b12
+    x = fromMaybe 0 (f.coords !! 0)
+    y = fromMaybe 0 (f.coords !! 1)
+    new_coords = [x - dx, y - dy]
+
 
 activate :: State -> Int -> State
 activate {active_figure : f, figures : figs } n = { active_figure : nf, figures : new_figs }
@@ -150,18 +237,28 @@ keyboardHandler e = case (code e) of
   "ArrowRight" -> MoveRight
   "ArrowUp" -> MoveUp
   "ArrowDown" -> MoveDown
-  "Digit1" -> Activate 1
-  "Digit2" -> Activate 2
-  "Digit3" -> Activate 3
-  "Digit4" -> Activate 4
+  "KeyP" -> Activate 1
+  "KeyI" -> Activate 2
+  "KeyT" -> Activate 3
+  "KeyY" -> Activate 4
+  "KeyX" -> Activate 5
+  "KeyF" -> Activate 6
+  "KeyL" -> Activate 7
+  "KeyW" -> Activate 8
+  "KeyU" -> Activate 9
+  "KeyZ" -> Activate 10
+  "KeyN" -> Activate 11
+  "KeyV" -> Activate 12
+  "KeyR" -> Rotate
+  "KeyH" -> Flip
   _ -> NoMove
 
 component
-  :: ∀ m
+  :: forall m
   . MonadAff m
   => H.Component Query Input Output m
 component = H.mkComponent
-    { initialState: \i -> { active_figure : fig, figures : [fig, fig1, fig2, fig3] }
+    { initialState: \i -> { active_figure : fig, figures : [fig, fig1, fig2, fig3, fig4, fig5, fig6, fig7, fig8, fig9, fig10, fig11 ] }
     , render
     , eval: H.mkEval H.defaultEval {
       initialize = Just Initialize 
@@ -186,4 +283,6 @@ component = H.mkComponent
                        MoveDown -> H.modify_ \s -> down s
                        NoMove -> H.modify_ \s -> s
                        Activate n -> H.modify_ \s -> activate s n
+                       Rotate -> H.modify_ \s -> rotate s
+                       Flip -> H.modify_ \s -> fliph s
 
