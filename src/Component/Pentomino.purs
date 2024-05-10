@@ -1,4 +1,4 @@
-module Component.Counter where
+module Component.Pentomino where
 
 import Data.Array
 import Data.Function.Uncurried
@@ -13,20 +13,21 @@ import CSS.Geometry (width, height)
 import CSS.Property (Value)
 import CSS.Size (rem)
 import CSS.String (fromString)
+import Data.Array.Partial (tail, head)
 import Data.Const (Const)
+import Data.Foldable (for_)
+import Data.Int (toStringAs, radix)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (log)
 import Halogen as H
-import Halogen.Query as HQ
 import Halogen.HTML as HH
 import Halogen.HTML.CSS as HC
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Halogen.Query as HQ
+import Partial.Unsafe (unsafePartial)
 import Web.HTML.HTMLElement (focus)
-import Data.Foldable (for_)
-import Data.Int (toStringAs, radix)
-
 
 class SpaceEvenly a where 
   spaceEvenly :: a
@@ -48,10 +49,10 @@ type Board = Array (Array Int)
 type Figure = { base :: Array (Array Int), board :: Board, coords :: Array Int, number :: Int }
 
 fig :: Figure
-fig = { base : [[0,0], [2,0], [2,2], [0,2]], board : [[0,0], [1, 0], [0, 1], [1, 1], [0, 2]], coords : [2,1], number : 1 }
+fig = { base : [[0,0], [2,0], [2,2], [0,2]], board : [[0,0], [1, 0], [0, 1], [1, 1], [0, 2]], coords : [0,0], number : 1 }
 
 fig1 :: Figure 
-fig1 = { base :  [[0,2], [2,0], [4,2], [2,4]], board : [[0,0], [1,0], [2,0], [3,0], [4,0]], coords : [3,2], number : 2 }
+fig1 = { base :  [[0,2], [2,0], [4,2], [2,4]], board : [[0,0], [1,0], [2,0], [3,0], [4,0]], coords : [3,0], number : 2 }
 
 
 fig2 :: Figure 
@@ -146,17 +147,16 @@ move :: Figure -> Array Figure -> Array Int -> Board -> State
 move f figs new_coords new_board = { active_figure : nf, figures : new_figs }
   where
     nf = f { coords = new_coords, board = new_board }
-    t = fromMaybe [] (tail figs)
+    t = unsafePartial tail figs
     new_figs = cons nf t
 
-addImage arrayOfDivs = snoc arrayOfDivs (HH.div [] [(HH.img [HP.src "pents1.gif"])])   
 
 
 right :: State -> State 
 right {active_figure : f, figures : figs} = move f figs new_coords f.board
   where
-    x = fromMaybe 0 (f.coords !! 0)
-    y = fromMaybe 0 (f.coords !! 1)
+    x = unsafePartial head f.coords
+    y = unsafePartial head $ unsafePartial tail f.coords  -- fromMaybe 0 (f.coords !! 1)
     new_coords = [x + 1, y]
 
 left :: State -> State 
